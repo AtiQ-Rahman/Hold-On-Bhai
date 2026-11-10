@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hold On Bhai settings</title>
+  <link rel="icon" href="../icons/icon32.png">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <header class="topnav">
+    <span class="brand"><img src="../icons/icon48.png" alt="">Hold On Bhai</span>
+    <nav>
+      <a href="options.html" class="active">Settings</a>
+      <a href="stats.html">Stats</a>
+    </nav>
+  </header>
+
+  <main class="wrap">
+    <h1 class="page-title">Settings</h1>
+
+    <section class="card lock" id="lock">
+      <div class="lock-icon" id="lock-icon">🔒</div>
+      <div class="lock-body">
+        <h2 id="lock-title"></h2>
+        <p class="muted" id="lock-text"></p>
+        <div class="lock-actions" id="lock-actions"></div>
+        <p class="error" id="lock-error" hidden></p>
+        <div class="newpw" id="newpw" hidden>
+          <p class="small muted">Your new password (shown once):</p>
+          <code id="newpw-value"></code>
+        </div>
+      </div>
+    </section>
+
+    <section class="card pending" id="pending" hidden>
+      <div class="pending-head">
+        <h2>⏳ Scheduled changes</h2>
+        <button type="button" class="ghost" id="pending-cancel-all">Cancel all</button>
+      </div>
+      <p class="muted small">These loosen things, so they wait 24 hours. Cancel any of them if the craving's gone.</p>
+      <ul id="pending-list"></ul>
+    </section>
+
+    <div class="pin-hint card" id="pin-hint" hidden>
+      📌 <span><b>Pin Hold On Bhai to your toolbar</b> so the Focus button is one click away: click the puzzle icon 🧩 next to the address bar, then the pin next to Hold On Bhai. Shortcut: <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>F</kbd> opens it too.</span>
+    </div>
+
+    <section class="card curfew-card" id="curfew">
+      <div class="curfew-head">
+        <h2>🌙 Curfew</h2>
+        <label class="check"><input type="checkbox" id="cf-enabled"><span>On</span></label>
+      </div>
+      <p class="muted small">Every tracked site stays closed in this window, every day. Running sessions end when it starts.
+        You can make it longer anytime. Making it shorter or turning it off follows the settings lock.</p>
+      <div class="curfew-row">
+        <label>From <input type="time" id="cf-start"></label>
+        <label>Until <input type="time" id="cf-end"></label>
+        <button type="button" class="primary" id="cf-save">Save curfew</button>
+      </div>
+      <p class="small" id="cf-status"></p>
+    </section>
+
+    <form id="form" autocomplete="off">
+      <fieldset id="fields">
+        <section class="section">
+          <div class="section-head">
+            <h2>Sites</h2>
+            <p class="muted small">Each site has its own daily budget. When it's used up, the site stays closed until midnight.</p>
+          </div>
+          <div id="sites" class="sites"></div>
+          <button type="button" id="add-site">+ Add a site</button>
+        </section>
+
+        <section class="section">
+          <div class="section-head">
+            <h2>🖤 Black & white</h2>
+            <p class="muted small">Tracked sites lose their colors. Colors are half the dopamine.</p>
+          </div>
+          <div class="grid">
+            <label>Black & white mode
+              <select name="grayscaleMode">
+                <option value="always">The whole session (recommended)</option>
+                <option value="lastMinute">Only the last minute</option>
+                <option value="off">Off, keep the colors</option>
+              </select>
+            </label>
+            <label class="check">
+              <input type="checkbox" name="grayscaleInLearn">
+              <span>Black & white in Learn mode too (off: Learn keeps its colors)</span>
+            </label>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-head">
+            <h2>Timer</h2>
+          </div>
+          <div class="grid">
+            <label>Timer choices (minutes, comma separated)
+              <input type="text" name="timerOptions">
+            </label>
+            <label>Max minutes when "Just bored"
+              <input type="number" name="boredMaxMin" min="1" max="240">
+            </label>
+            <label>Classes per day (Learn → 🎓 Class, doesn't use the Learn budget)
+              <input type="number" name="classesPerDay" min="0" max="5">
+            </label>
+            <label>Learn mode check-in every (minutes, 0 = off)
+              <input type="number" name="learnCheckinMin" min="0" max="120">
+            </label>
+            <label>Tick tick clock sound
+              <select name="tickMode">
+                <option value="onSite">While I'm on the site (recommended)</option>
+                <option value="always">The whole session, even on other tabs</option>
+                <option value="lastMinute">Only the last minute</option>
+                <option value="off">Off</option>
+              </select>
+            </label>
+            <label>Sound volume (ticking + breathing, no password needed)
+              <input type="range" name="tickVolume" min="0" max="100" step="5">
+            </label>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-head">
+            <h2>When time's up</h2>
+          </div>
+          <div class="modes" id="modes">
+            <label class="mode">
+              <input type="radio" name="endMode" value="strict">
+              <span><b>Strict</b> (recommended)<br><span class="muted small">Beep, a short grace period to wrap up, then the tab closes.</span></span>
+            </label>
+            <label class="mode">
+              <input type="radio" name="endMode" value="soft">
+              <span><b>Soft</b><br><span class="muted small">Beep and cover the page. You close it yourself.</span></span>
+            </label>
+            <label class="mode">
+              <input type="radio" name="endMode" value="hard">
+              <span><b>Hard</b><br><span class="muted small">Beep and close right away.</span></span>
+            </label>
+          </div>
+          <div class="grid">
+            <label>Grace period (seconds)
+              <input type="number" name="graceSeconds" min="5" max="120">
+            </label>
+            <label>Minutes per extension
+              <input type="number" name="extendMinutes" min="1" max="30">
+            </label>
+            <label>Extension wait (seconds, doubles each time)
+              <input type="number" name="extendBaseWaitSeconds" min="0" max="120">
+            </label>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-head">
+            <h2>Pause screen</h2>
+            <p class="muted small">These only matter for sites set to "add more each visit". They never go below that site's own breath count.</p>
+          </div>
+          <div class="grid">
+            <label>First wait of the day (seconds, rounds up to whole 10s breaths)
+              <input type="number" name="baseWaitSeconds" min="0" max="300">
+            </label>
+            <label>Longest wait (seconds)
+              <input type="number" name="maxWaitSeconds" min="0" max="600">
+            </label>
+            <label class="check">
+              <input type="checkbox" name="risingWait">
+              <span>Double the wait every time you come back the same day</span>
+            </label>
+          </div>
+          <label class="block">Things to do instead when you're bored (one per line)
+            <textarea name="alternatives"></textarea>
+          </label>
+        </section>
+      </fieldset>
+
+      <div class="savebar">
+        <span class="muted small" id="save-status"></span>
+        <button type="submit" class="primary" id="save">Save settings</button>
+      </div>
+    </form>
+  </main>
+
+  <div class="loosen-backdrop" id="loosen" hidden>
+    <div class="loosen card" role="dialog" aria-labelledby="loosen-title">
+      <h2 id="loosen-title">These make things looser 👀</h2>
+      <ul id="loosen-list"></ul>
+      <p class="muted small">Looser changes need some slow breaths, then your password, and they kick in <b>24 hours</b> from now. Most cravings don't survive a day.</p>
+      <div class="loosen-breath" id="loosen-breath">
+        <div class="breath" aria-hidden="true">
+          <div class="breath-ring"></div>
+          <div class="breath-ball" id="lb-ball"></div>
+          <div class="breath-count num" id="lb-count"></div>
+        </div>
+        <div>
+          <div class="lb-label" id="lb-label"></div>
+          <div class="muted small" id="lb-sub"></div>
+        </div>
+      </div>
+      <div class="loosen-row" id="loosen-pw-row" hidden>
+        <input type="password" id="loosen-pw" placeholder="Password" autocomplete="off">
+        <button type="button" class="primary" id="loosen-go">Schedule for 24h</button>
+      </div>
+      <p class="error" id="loosen-err" hidden></p>
+      <div class="loosen-row">
+        <button type="button" id="loosen-strict">Save only the stricter stuff</button>
+        <button type="button" class="ghost" id="loosen-cancel">Never mind</button>
+      </div>
+    </div>
+  </div>
+
+  <template id="site-tpl">
+    <div class="site card">
+      <div class="site-row">
+        <label class="check">
+          <input type="checkbox" data-k="enabled">
+          <span>Track</span>
+        </label>
+        <input type="text" data-k="name" class="site-name" placeholder="Name">
+        <button type="button" class="ghost remove">Remove</button>
+      </div>
+      <div class="grid">
+        <label>Domains (comma separated)
+          <input type="text" data-k="domains" placeholder="facebook.com, messenger.com">
+        </label>
+        <label><span class="chill-label">Daily budget (minutes)</span>
+          <input type="number" data-k="dailyLimitMin" min="0" max="1440">
+        </label>
+        <label class="learn-field">Learn budget (minutes, 0 = no Learn mode)
+          <input type="number" data-k="learnLimitMin" min="0" max="1440">
+        </label>
+        <label>Breathing before you get in
+          <select data-k="breathMode">
+            <option value="fixed">Always the same number</option>
+            <option value="rising">Start there, add more each visit today</option>
+          </select>
+        </label>
+        <label class="breaths-field">Breaths (the least you'll ever get)
+          <input type="number" data-k="breaths" min="1" max="30">
+        </label>
+        <label>"Check messages" link (optional)
+          <input type="url" data-k="messagesUrl" placeholder="https://…">
+        </label>
+        <label class="check feed">
+          <input type="checkbox" data-k="hideFeed">
+          <span class="feed-label">Hide the feed in Chill too (Learn always hides it)</span>
+        </label>
+      </div>
+      <input type="hidden" data-k="id">
+    </div>
+  </template>
+
+  <script type="module" src="options.js"></script>
+</body>
+</html>

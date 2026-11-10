@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Welcome to Hold On Bhai</title>
+  <link rel="icon" href="../icons/icon32.png">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    main { max-width: 640px; margin: 0 auto; padding: 40px 16px 64px; }
+    .brand { margin-bottom: 32px; }
+    h1 { margin-bottom: 10px; }
+    .lead { font-size: 18px; margin: 0 0 28px; }
+    .pw-card { text-align: center; margin: 24px 0; }
+    .pw {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: clamp(20px, 6vw, 30px);
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      padding: 16px;
+      margin: 12px 0;
+      border-radius: 12px;
+      background: var(--surface-2);
+      word-break: break-all;
+      user-select: all;
+    }
+    ol { padding-left: 20px; }
+    li { margin: 8px 0; }
+    .confirm { display: flex; gap: 10px; align-items: flex-start; margin: 20px 0; }
+    .confirm input { margin-top: 4px; width: 18px; height: 18px; accent-color: var(--accent); }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .how { margin-top: 32px; }
+    .how h2 { margin-bottom: 10px; }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="brand"><img src="../icons/icon48.png" alt="">Hold On Bhai</div>
+    <h1>Welcome, bhai 🤝</h1>
+    <p class="lead">From now on, opening Facebook starts with one question: <b>why tho?</b></p>
+
+    <section id="has-pw" hidden>
+      <div class="card pw-card">
+        <h2>Your secret password 🔐</h2>
+        <p class="muted small">Made just for you. You see it once. Only once. Fr.</p>
+        <div class="pw" id="pw"></div>
+        <div class="row" style="justify-content:center">
+          <button id="copy">Copy</button>
+        </div>
+      </div>
+
+      <h2>Now hide it from yourself</h2>
+      <ol>
+        <li>Write it on paper and put it somewhere annoying to reach, or send it to a friend and delete the chat. Future you will try to get it. Don't let them.</li>
+        <li>Making things stricter (adding a site, lowering a budget) always works. Loosening anything needs this password, and the change kicks in <b>24 hours later</b>.</li>
+        <li>For the next <b id="setup-left"></b>, settings are open so you can set things up. Then they lock.</li>
+      </ol>
+
+      <label class="confirm">
+        <input type="checkbox" id="saved">
+        <span>Saved it somewhere future-me can't easily reach.</span>
+      </label>
+      <div class="row">
+        <button class="primary" id="ack" disabled>Done, hide it forever</button>
+        <a class="btn" href="options.html">Open settings</a>
+      </div>
+    </section>
+
+    <section id="no-pw" hidden>
+      <div class="card">
+        <h2>The password was a one-time show.</h2>
+        <p class="muted">Lost it? The only way back is removing and reinstalling the extension, which also wipes your stats. Tough love.</p>
+        <a class="btn" href="options.html">Open settings</a>
+      </div>
+    </section>
+
+    <section class="how">
+      <h2>How it works</h2>
+      <ol>
+        <li><b>Pause:</b> open a tracked site and you get a short countdown and one question: "What's the mission?" The wait doubles every time you come back the same day.</li>
+        <li><b>Timer:</b> pick 2, 5, 10 or 15 minutes. A small timer sits in the corner with your mission, and a clock goes tick tick while you scroll.</li>
+        <li><b>Peep peep:</b> when time's up you hear a beep, get 15 seconds to wrap up, then the tab self-destructs.</li>
+        <li><b>Daily budget:</b> Facebook gets 30 minutes a day. When it's gone, it's gone until midnight. No cap.</li>
+        <li><b>Stats:</b> see how often you open it, why, and how you felt after. The receipts don't lie.</li>
+      </ol>
+    </section>
+  </main>
+  <script type="module" src="welcome.js"></script>
+</body>
+</html>

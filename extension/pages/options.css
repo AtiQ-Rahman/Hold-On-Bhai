@@ -1,0 +1,108 @@
+.page-title { margin: 8px 0 20px; }
+
+fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+
+.lock {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  margin-bottom: 32px;
+}
+.lock.open { border-color: var(--accent); background: var(--accent-soft); }
+.lock-icon { font-size: 28px; line-height: 1; }
+.lock-body { flex: 1; min-width: 0; }
+.lock-body h2 { margin-bottom: 4px; }
+.lock-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; align-items: center; }
+.lock-actions input { max-width: 280px; font-family: ui-monospace, Menlo, Consolas, monospace; }
+.newpw { margin-top: 12px; }
+.newpw code {
+  display: inline-block;
+  font-size: 20px;
+  font-weight: 700;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--surface);
+  user-select: all;
+}
+
+.section { margin-bottom: 36px; }
+.section-head { margin-bottom: 14px; }
+.section-head h2 { margin-bottom: 4px; }
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px 16px;
+  margin-bottom: 14px;
+}
+label { display: grid; gap: 6px; font-size: 14px; font-weight: 600; }
+label.block { margin-top: 4px; }
+label.check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+  align-self: end;
+  padding-bottom: 8px;
+}
+label.check input { width: 18px; height: 18px; accent-color: var(--accent); }
+
+.sites { display: grid; gap: 12px; margin-bottom: 12px; }
+.site { padding: 16px; }
+.site.off { opacity: 0.7; }
+.site-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.site-row .check { padding: 0; }
+.site-row .site-name { font-weight: 700; max-width: 260px; }
+.site-row .remove { margin-left: auto; }
+
+.modes { display: grid; gap: 8px; margin-bottom: 16px; }
+.mode {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  font-weight: 500;
+  padding: 12px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  cursor: pointer;
+}
+.mode:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
+.mode input { margin-top: 4px; accent-color: var(--accent); }
+
+.savebar {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 0;
+  background: linear-gradient(transparent, var(--bg) 30%);
+}
+
+fieldset:disabled .site-row .remove,
+fieldset:disabled #add-site { display: none; }
+
+.pin-hint { display: flex; gap: 10px; align-items: flex-start; padding: 14px 16px; margin-bottom: 20px; border-color: var(--accent); background: var(--accent-soft); font-size: 14px; }
+kbd { font: 12px ui-monospace, Menlo, Consolas, monospace; padding: 1px 6px; border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 6px; background: var(--surface); }
+.curfew-card { margin-bottom: 32px; }
+.curfew-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.curfew-head .check { padding: 0; }
+.curfew-row { display: flex; gap: 12px; align-items: end; flex-wrap: wrap; margin-top: 12px; }
+.curfew-row label { width: 140px; }
+input[type="time"] { font: inherit; color: var(--text); background: var(--surface); border: 1.5px solid var(--border); border-radius: 10px; padding: 8px 10px; }
+
+.pending { margin-bottom: 24px; border-color: var(--accent); }
+.pending-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+#pending-list { list-style: none; padding: 0; margin: 12px 0 0; display: grid; gap: 8px; }
+#pending-list li { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 10px; background: var(--surface-2); font-size: 14px; }
+#pending-list button { padding: 6px 12px; font-size: 13px; flex: none; }
+.loosen-backdrop { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; padding: 16px; background: rgba(28, 25, 23, .55); }
+.loosen { width: min(480px, 100%); }
+.loosen ul { margin: 12px 0; padding-left: 20px; font-size: 14px; }
+.loosen-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
+.loosen-row input { flex: 1; min-width: 160px; font-family: ui-monospace, Menlo, Consolas, monospace; }
+
+.loosen-breath { display: flex; align-items: center; gap: 18px; margin: 14px 0 4px; }
+.lb-label { font-size: 20px; font-weight: 800; }

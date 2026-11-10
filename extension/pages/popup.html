@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Hold On Bhai</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body { width: 340px; padding: 16px; }
+    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+    .site { padding: 12px 0; border-top: 1px solid var(--border); }
+    .site:first-child { border-top: 0; padding-top: 0; }
+    .site-top { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 6px; font-size: 14px; }
+    .live { margin-top: 8px; font-size: 13px; background: var(--accent-soft); border-radius: 10px; padding: 6px 10px; }
+    .totals { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-top: 12px; padding: 10px 12px; border-radius: 12px; background: var(--surface-2); font-size: 13px; }
+    .volume { display: flex; align-items: center; gap: 10px; margin-top: 12px; font-size: 13px; }
+    .volume input { flex: 1; accent-color: var(--accent); }
+    .volume .num { width: 34px; text-align: right; }
+    footer { display: flex; gap: 8px; margin-top: 14px; }
+    footer a { flex: 1; font-size: 14px; padding: 8px 10px; }
+    .empty { font-size: 14px; }
+
+    .focus {
+      border-radius: 16px; padding: 14px; margin-bottom: 14px;
+      background: linear-gradient(135deg, #dc2626, #b91c1c); color: #fff;
+      box-shadow: 0 8px 24px rgba(220, 38, 38, .28);
+    }
+    .focus h2 { font-size: 17px; display: flex; align-items: center; gap: 6px; }
+    .focus p { margin: 2px 0 10px; font-size: 13px; opacity: .9; }
+    .chips { display: grid; grid-template-columns: repeat(4, 1fr) 1.3fr; gap: 6px; margin-bottom: 10px; }
+    .chips button, .chips input {
+      padding: 7px 0; border-radius: 10px; font-weight: 700; font-size: 13px;
+      background: rgba(255,255,255,.14); border: 1.5px solid rgba(255,255,255,.25); color: #fff;
+    }
+    .chips input { text-align: center; padding: 7px 4px; }
+    .chips input::placeholder { color: rgba(255,255,255,.7); font-weight: 600; }
+    .chips button:hover:not(:disabled) { border-color: #fff; }
+    .chips button.selected { background: #fff; color: #b91c1c; border-color: #fff; }
+    .lockin {
+      width: 100%; padding: 12px; font-size: 16px; font-weight: 800; border: 0;
+      background: #fff; color: #b91c1c; border-radius: 12px;
+    }
+    .lockin:hover:not(:disabled) { background: #fee2e2; }
+    .lockin.confirm { background: #fde047; color: #1c1917; animation: shake .35s; }
+    @keyframes shake { 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
+    .focus .clock { font-size: 44px; font-weight: 800; line-height: 1.1; margin: 4px 0; }
+    .focus .row { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 13px; }
+    .focus .more { padding: 6px 10px; font-size: 13px; font-weight: 700; background: rgba(255,255,255,.16); color: #fff; border-color: rgba(255,255,255,.3); }
+    .focus .err { background: rgba(0,0,0,.2); border-radius: 8px; padding: 4px 8px; font-size: 12px; margin-top: 8px; }
+    .curfew { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 13px; margin-bottom: 14px; padding: 8px 12px; border-radius: 12px; background: var(--surface-2); }
+    .curfew.on { background: #4f46e5; color: #fff; }
+    .curfew a { font-weight: 600; }
+    .curfew.on a { color: #fff; }
+  </style>
+</head>
+<body>
+  <header>
+    <span class="brand"><img src="../icons/icon48.png" alt="">Hold On Bhai</span>
+    <span class="muted small">Today</span>
+  </header>
+  <section class="focus" id="focus"></section>
+  <div class="curfew" id="curfew"></div>
+  <div id="sites"></div>
+  <div class="totals" id="totals" hidden></div>
+  <label class="volume">
+    <span id="vol-icon">🔊</span>
+    <input type="range" id="volume" min="0" max="100" step="5" aria-label="Sound volume">
+    <span class="num muted" id="vol-num"></span>
+  </label>
+  <footer>
+    <a class="btn" href="stats.html" target="_blank">Stats</a>
+    <a class="btn" href="options.html" target="_blank">Settings</a>
+  </footer>
+  <script type="module" src="popup.js"></script>
+</body>
+</html>

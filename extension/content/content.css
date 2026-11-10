@@ -1,0 +1,58 @@
+/* Injected on every page, but every rule is scoped to attributes the content
+   script only sets on tracked sites. */
+
+html[data-hob-pending="1"] {
+  visibility: hidden !important;
+}
+
+/* ---------- Hide the feed ---------- */
+
+/* Facebook: home feed, stories, reels */
+html[data-hob-hidefeed="facebook"][data-hob-home="1"] [role="main"] [role="feed"],
+html[data-hob-hidefeed="facebook"][data-hob-home="1"] [role="main"] [aria-label="Stories"],
+html[data-hob-hidefeed="facebook"][data-hob-home="1"] [role="main"] [aria-label="Reels"],
+html[data-hob-hidefeed="facebook"] [data-pagelet="Stories"],
+html[data-hob-hidefeed="facebook"] a[href*="/reel/"],
+html[data-hob-hidefeed="facebook"] a[href^="/reels"],
+html[data-hob-hidefeed="facebook"] a[href*="facebook.com/reel"] {
+  display: none !important;
+}
+
+/* YouTube: home grid, recommendations sidebar, Shorts */
+html[data-hob-hidefeed="youtube"] ytd-browse[page-subtype="home"] #contents,
+html[data-hob-hidefeed="youtube"] ytd-watch-flexy #related,
+html[data-hob-hidefeed="youtube"] ytd-reel-shelf-renderer,
+html[data-hob-hidefeed="youtube"] ytd-rich-shelf-renderer[is-shorts],
+html[data-hob-hidefeed="youtube"] ytd-guide-entry-renderer:has(a[title="Shorts"]),
+html[data-hob-hidefeed="youtube"] ytd-mini-guide-entry-renderer[aria-label="Shorts"],
+html[data-hob-hidefeed="youtube"] .ytp-endscreen-content,
+html[data-hob-hidefeed="youtube"] .ytp-ce-element,
+html[data-hob-hidefeed="youtube"] ytd-comments#comments,
+html[data-hob-hidefeed="youtube"] ytd-reel-shelf-renderer,
+html[data-hob-hidefeed="youtube"] ytm-shorts-lockup-view-model,
+html[data-hob-hidefeed="youtube"] ytd-guide-entry-renderer:has(a[href^="/shorts"]),
+html[data-hob-hidefeed="youtube"] yt-chip-cloud-renderer,
+html[data-hob-hidefeed="youtube"] .ytp-autonav-endscreen-countdown-overlay,
+html[data-hob-hidefeed="youtube"] .html5-endscreen,
+html[data-hob-hidefeed="youtube"] .ytp-videowall-still {
+  display: none !important;
+}
+
+/* Instagram: home feed, reels, explore */
+html[data-hob-hidefeed="instagram"][data-hob-home="1"] main article,
+html[data-hob-hidefeed="instagram"] a[href^="/reels"],
+html[data-hob-hidefeed="instagram"] a[href^="/explore"] {
+  display: none !important;
+}
+
+/* X / Twitter: home timeline */
+html[data-hob-hidefeed="x"][data-hob-home="1"] [data-testid="primaryColumn"] section[role="region"],
+html[data-hob-hidefeed="x"] [aria-label="Timeline: Trending now"] {
+  display: none !important;
+}
+
+/* Reddit: home / popular feeds */
+html[data-hob-hidefeed="reddit"][data-hob-home="1"] shreddit-feed,
+html[data-hob-hidefeed="reddit"][data-hob-home="1"] main .ListingLayout-outerContainer {
+  display: none !important;
+}

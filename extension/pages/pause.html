@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hold on, bhai</title>
+  <link rel="icon" href="../icons/icon32.png">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="pause.css">
+</head>
+<body>
+  <main class="gate">
+    <div class="brand"><img src="../icons/icon48.png" alt="">Hold On Bhai</div>
+
+    <section id="loading" class="center muted">Loading…</section>
+
+    <!-- Normal gate -->
+    <section id="gate" hidden>
+      <h1>Hold on, bhai ✋</h1>
+      <p class="lead" id="lead">You're about to open <b class="site-name"></b>.</p>
+
+      <div class="today card">
+        <div class="today-row">
+          <span id="opens-line"></span>
+          <span class="num"><b id="left-line"></b></span>
+        </div>
+        <div class="bar"><span id="used-bar"></span></div>
+      </div>
+
+      <div class="wait" id="wait">
+        <div class="breath" aria-hidden="true">
+          <div class="breath-ring"></div>
+          <div class="breath-ball" id="breath-ball"></div>
+          <div class="breath-count num" id="breath-count"></div>
+        </div>
+        <div>
+          <div class="wait-num" id="wait-num" aria-live="polite"></div>
+          <div class="muted small" id="wait-text"></div>
+        </div>
+      </div>
+
+      <div class="locked-note card" id="locked-note" hidden></div>
+
+      <div class="step" id="step-mode" hidden>
+        <h2>Learn or chill?</h2>
+        <div class="modes">
+          <button class="mode-btn" data-mode="learn" disabled>
+            <span class="mode-emoji">📚</span>
+            <span><b>Learn</b><br><span class="muted small" id="learn-left"></span></span>
+          </button>
+          <button class="mode-btn" data-mode="chill" disabled>
+            <span class="mode-emoji">🍿</span>
+            <span><b>Chill</b><br><span class="muted small" id="chill-left"></span></span>
+          </button>
+        </div>
+      </div>
+
+      <div class="step" id="step-learn" hidden>
+        <h2>What are you learning?</h2>
+        <input type="text" id="learn-text" maxlength="120" placeholder="e.g. React hooks, calculus chapter 3">
+        <label class="class-toggle card" id="class-box" hidden>
+          <input type="checkbox" id="is-class">
+          <span><b>🎓 This is a class</b><br><span class="muted small" id="class-left"></span></span>
+        </label>
+        <div class="class-step" id="class-step" hidden>
+          <h3>How long is the class?</h3>
+          <div class="timers" id="class-timers"></div>
+          <div class="wait class-breath" id="class-breath">
+            <div class="breath" aria-hidden="true">
+              <div class="breath-ring"></div>
+              <div class="breath-ball" id="cb-ball"></div>
+              <div class="breath-count num" id="cb-count"></div>
+            </div>
+            <div>
+              <div class="wait-num" id="cb-label"></div>
+              <div class="muted small" id="cb-sub"></div>
+            </div>
+          </div>
+        </div>
+        <p class="video-line card" id="video-line"></p>
+      </div>
+
+      <div class="step" id="step-reason">
+        <h2>What's the mission?</h2>
+        <div class="reasons" id="reasons"></div>
+        <div id="other-box" hidden>
+          <input type="text" id="other-text" maxlength="120" placeholder="e.g. reply to Rafi about Saturday">
+        </div>
+      </div>
+
+      <div class="step bored card" id="bored-box" hidden>
+        <h3>Respect the honesty 🫡</h3>
+        <p class="muted">Boredom usually passes in like 5 minutes. Side quests instead:</p>
+        <ul id="alternatives"></ul>
+        <div class="row">
+          <button class="primary" id="bored-close">Close tab, I'm good</button>
+          <button class="ghost" id="bored-continue">Nah, still going in</button>
+        </div>
+      </div>
+
+      <div class="step" id="step-timer" hidden>
+        <h2>How long you need?</h2>
+        <div class="timers" id="timers"></div>
+        <p class="muted small" id="timer-note"></p>
+      </div>
+
+      <div class="go-row">
+        <button class="primary go" id="go" disabled>Choose a reason and a timer</button>
+        <button class="ghost" id="close">Never mind, I'm good</button>
+      </div>
+      <p class="error" id="error" hidden></p>
+    </section>
+
+    <!-- Budget used up -->
+    <section id="blocked" hidden class="center">
+      <div class="big-emoji">🛑</div>
+      <h1>That's a wrap for today.</h1>
+      <p class="lead">You used all <b id="blocked-limit"></b> of <b class="site-name"></b> today. No extensions, no loopholes, no cap.</p>
+      <p class="muted">Back at midnight, in <b class="num" id="reset-in"></b>. Go do something cool meanwhile.</p>
+      <div class="go-row">
+        <button class="primary" id="blocked-close">Close tab</button>
+      </div>
+    </section>
+
+    <!-- Focus mode / curfew -->
+    <section id="block" hidden class="center">
+      <div class="big-emoji" id="block-emoji">🎯</div>
+      <h1 id="block-title">Focus mode is on.</h1>
+      <div class="block-clock num" id="block-clock">--:--</div>
+      <p class="lead" id="block-text"></p>
+      <p class="muted" id="block-sub"></p>
+      <div class="go-row">
+        <button class="primary" id="block-close">Close tab</button>
+      </div>
+    </section>
+
+    <!-- Not tracked / error -->
+    <section id="oops" hidden class="center">
+      <h1>Hmm.</h1>
+      <p class="lead" id="oops-text"></p>
+      <div class="go-row"><button class="primary" id="oops-close">Close this tab</button></div>
+    </section>
+  </main>
+  <script type="module" src="pause.js"></script>
+</body>
+</html>

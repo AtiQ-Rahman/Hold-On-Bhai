@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hold On Bhai stats</title>
+  <link rel="icon" href="../icons/icon32.png">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="stats.css">
+</head>
+<body>
+  <header class="topnav">
+    <span class="brand"><img src="../icons/icon48.png" alt="">Hold On Bhai</span>
+    <nav>
+      <a href="options.html">Settings</a>
+      <a href="stats.html" class="active">Stats</a>
+    </nav>
+  </header>
+
+  <main class="wrap">
+    <div class="title-row">
+      <h1>Stats</h1>
+      <select id="site-filter" aria-label="Site"></select>
+    </div>
+
+    <p class="insight card" id="insight" hidden></p>
+
+    <section class="tiles">
+      <div class="tile card">
+        <div class="tile-label">Today</div>
+        <div class="tile-value num" id="t-used"></div>
+        <div class="tile-sub muted" id="t-used-sub"></div>
+      </div>
+      <div class="tile card">
+        <div class="tile-label">Opens today</div>
+        <div class="tile-value num" id="t-opens"></div>
+        <div class="tile-sub muted" id="t-opens-sub"></div>
+      </div>
+      <div class="tile card">
+        <div class="tile-label">Last 7 days</div>
+        <div class="tile-value num" id="t-week"></div>
+        <div class="tile-sub muted" id="t-week-sub"></div>
+      </div>
+    </section>
+
+    <section class="card chart-card">
+      <h2>Minutes per day</h2>
+      <p class="muted small" id="chart-sub">Last 14 days</p>
+      <div class="chart" id="chart" role="img"></div>
+      <div class="tooltip" id="tooltip" hidden></div>
+    </section>
+
+    <div class="two">
+      <section class="card">
+        <h2>Why you opened it</h2>
+        <p class="muted small">Last 30 days</p>
+        <div id="reasons" class="hbars"></div>
+      </section>
+      <section class="card">
+        <h2>How you felt after</h2>
+        <p class="muted small">Last 30 days, by reason</p>
+        <div id="moods"></div>
+      </section>
+    </div>
+
+    <section class="card recent">
+      <h2>Recent visits</h2>
+      <div class="table-wrap">
+        <table id="recent">
+          <thead>
+            <tr><th>When</th><th>Site</th><th>Reason</th><th class="r">Time</th><th>Ended</th><th>Felt</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <p class="muted small" id="recent-empty" hidden>No visits yet. Main character energy ✨</p>
+    </section>
+  </main>
+  <script type="module" src="stats.js"></script>
+</body>
+</html>
