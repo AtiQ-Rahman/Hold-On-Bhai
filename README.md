@@ -12,6 +12,8 @@ Works on Brave, Chrome, Edge and other Chromium browsers (Manifest V3). Everythi
   <img src="docs/demo.gif" width="420" alt="Demo: breathe first, say why you're here, timer, class, focus mode, curfew and the daily budget">
 </p>
 
+<p align="center">🎬 <a href="docs/hold-on-bhai-demo.mp4">Watch the demo video with voiceover (MP4, 48 s)</a></p>
+
 ---
 
 ## Contents
@@ -265,5 +267,5 @@ extension/
   content/             timer badge, time's-up overlay, check-ins, feed hiding
   pages/               pause screen, breathing, popup, settings, stats, welcome, offscreen audio
   icons/
-docs/                  demo.gif and screenshots used in this README
+docs/                  demo.gif, demo video and screenshots used in this README
 ```
