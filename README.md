@@ -4,7 +4,7 @@ A browser extension that puts a speed bump between you and the scroll.
 
 It doesn't just block Facebook, YouTube and Gmail. Before you get in, it makes you **breathe** and asks **why** you're there.
 Then it gives you a timer, ticks like a clock, beeps when time's up, closes the tab, and shuts the site for the day once your budget is gone.
-When you really need to work, **Focus mode** locks everything with no way out. At night, the **curfew** sends you to bed.
+When you really need to work, **Focus mode** closes every website except the few you allow, with no way out. At night, the **curfew** sends you to bed.
 
 Works on Brave, Chrome, Edge and other Chromium browsers (Manifest V3). Everything stays in your browser. No accounts, no servers.
 
@@ -174,7 +174,9 @@ For when you really need to work.
 3. Tap **🔒 Lock in**, then tap again to confirm.
 
 Until the timer ends:
-- **Every site on your list is closed**, even the ones you switched off (Instagram, X, Reddit).
+- **Every website is closed.** Google, news, shopping, all of it. Only the sites you allow open
+  (Settings → 🎯 Focus mode → *Open during Focus*; `localhost` and `127.0.0.1` by default, subdomains included).
+- Sites on your list stay closed even if you allow them, even the ones you switched off (Instagram, X, Reddit).
 - Learn and Class are off too. Any running session ends.
 - The **extensions page is blocked**, so you can't disable Hold On Bhai from there.
 - Settings can't be saved.

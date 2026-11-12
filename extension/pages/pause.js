@@ -42,6 +42,10 @@ async function init() {
   document.querySelectorAll(".site-name").forEach((el) => (el.textContent = info.site.name));
   document.title = `Hold on, bhai · ${info.site.name}`;
   if (info.block) return showBlock(info.block);
+  if (info.released && siteId === "_focusweb" && /^https?:/.test(target)) {
+    location.replace(target);
+    return;
+  }
   if (info.released) {
     $("oops-text").textContent = "Focus is over. You made it 🏆 Open that page again if you still need it.";
     return show("oops");

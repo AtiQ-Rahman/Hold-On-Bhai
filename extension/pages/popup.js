@@ -89,7 +89,7 @@ function renderFocus() {
     el.dataset.mode = "off";
     el.innerHTML = `
       <h2>🎯 Focus mode</h2>
-      <p>Every site on your list stays closed. No cancel, no override.</p>
+      <p>Every website closes, except the ones you allow in Settings. No cancel, no override.</p>
       <div class="chips">
         ${FOCUS_PRESETS.map((m) => `<button data-m="${m}">${m >= 60 && m % 60 === 0 ? `${m / 60}h` : `${m}m`}</button>`).join("")}
         <input id="f-custom" type="number" min="1" max="${FOCUS_MAX_MIN}" placeholder="min">

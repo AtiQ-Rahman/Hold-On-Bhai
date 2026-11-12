@@ -11,6 +11,7 @@ import {
   FEED_RULE_SITES,
   todayKey,
   findSiteForUrl,
+  focusClosesUrl,
   waitSecondsFor,
   extendWaitSeconds,
   extendPhrase,
@@ -82,7 +83,8 @@ function focusActive(state, now = Date.now()) {
   return !!state.focus && state.focus.until > now;
 }
 
-// Focus blocks every site on the list (even ones switched off). Curfew blocks tracked sites.
+// Focus blocks every website except the focus allowlist, and every site on the list (even ones
+// switched off, even if allowlisted). Curfew blocks tracked sites.
 function blockFor(state, site, now = Date.now()) {
   if (!site) return null;
   if (focusActive(state, now)) return { kind: "focus", until: state.focus.until, start: state.focus.start };
@@ -96,11 +98,16 @@ function anySiteForUrl(settings, url) {
   return hit ? siteById(settings, hit.id) : null;
 }
 
+// Any other website during Focus: a stand-in "site" so it lands on the focus block screen.
+function focusWebSite(settings, url) {
+  return focusClosesUrl(settings.focusAllow, url) ? { id: "_focusweb", name: new URL(url).hostname, enabled: true } : null;
+}
+
 // The site a URL belongs to, plus the block on it (if any).
 function siteAndBlock(state, url, now = Date.now()) {
   const tracked = findSiteForUrl(state.settings, url);
   if (focusActive(state, now)) {
-    const site = tracked || anySiteForUrl(state.settings, url);
+    const site = tracked || anySiteForUrl(state.settings, url) || focusWebSite(state.settings, url);
     return { site, block: site ? blockFor(state, site, now) : null };
   }
   return { site: tracked, block: blockFor(state, tracked, now) };
@@ -1190,6 +1197,9 @@ function sanitizeSettings(input) {
     learnCheckinMin: num(input.learnCheckinMin, 0, 120, d.learnCheckinMin),
     tickMode: ["onSite", "always", "lastMinute", "off"].includes(input.tickMode) ? input.tickMode : d.tickMode,
     tickVolume: num(input.tickVolume, 0, 100, d.tickVolume),
+    focusAllow: [...new Set((Array.isArray(input.focusAllow) ? input.focusAllow : String(input.focusAllow || "").split(/[,\n]/))
+      .map((x) => String(x).trim().toLowerCase().replace(/^https?:\/\//, "").replace(/[/:].*$/, "").replace(/^www\./, ""))
+      .filter(Boolean))].slice(0, 100),
     alternatives: (Array.isArray(input.alternatives) ? input.alternatives : String(input.alternatives || "").split("\n"))
       .map((x) => String(x).trim()).filter(Boolean).slice(0, 20),
   };
@@ -1223,6 +1233,7 @@ const GLOBAL_RULES = {
   tickMode: ["neutral"],
   tickVolume: ["neutral"],
   alternatives: ["neutral"],
+  focusAllow: ["subset", "Open during Focus"],
 };
 const SITE_RULES = {
   name: ["neutral"],
@@ -1245,6 +1256,7 @@ function isLooser(rule, key, oldV, newV) {
     case "maxLower": return Math.max(...newV) > Math.max(...oldV);
     case "checkin": return oldV > 0 && (newV === 0 || newV > oldV);
     case "superset": return oldV.some((d) => !newV.includes(d));
+    case "subset": return newV.some((d) => !oldV.includes(d));
     case "msgUrl": return newV !== oldV && newV !== "";
     case "curfew": return !curfewCovers(newV, oldV);
     case "changed": return newV !== oldV;
@@ -1488,6 +1500,14 @@ async function gateInfo(siteId, target) {
   const now = Date.now();
   if (siteId === "_focus") {
     return { ok: true, site: { id: "_focus", name: "Extensions", enabled: true }, block: focusActive(state, now) ? blockFor(state, {}, now) : null, released: !focusActive(state, now) };
+  }
+  if (siteId === "_focusweb") {
+    let name = "This site";
+    try {
+      name = new URL(target).hostname || name;
+    } catch {}
+    const closed = focusActive(state, now) && focusClosesUrl(state.settings.focusAllow, target || "");
+    return { ok: true, site: { id: "_focusweb", name, enabled: true }, block: closed ? blockFor(state, {}, now) : null, released: !closed };
   }
   const site = siteById(state.settings, siteId);
   if (!site) return { ok: false, error: "Unknown site." };

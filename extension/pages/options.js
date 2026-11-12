@@ -167,6 +167,7 @@ function fill(s) {
   form.maxWaitSeconds.value = s.maxWaitSeconds;
   form.risingWait.checked = s.risingWait;
   form.alternatives.value = s.alternatives.join("\n");
+  form.focusAllow.value = (s.focusAllow || []).join(", ");
 }
 
 function read() {
@@ -204,6 +205,7 @@ function read() {
     maxWaitSeconds: form.maxWaitSeconds.value,
     risingWait: form.risingWait.checked,
     alternatives: form.alternatives.value,
+    focusAllow: form.focusAllow.value,
   };
 }
 

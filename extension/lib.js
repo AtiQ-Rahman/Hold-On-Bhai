@@ -132,6 +132,8 @@ export const DEFAULT_SETTINGS = {
   classesPerDay: 1, // Learn mode keeps its colors unless this is on
   learnCheckinMin: 10,
   curfew: { enabled: false, start: "00:00", end: "07:00" },
+  // During Focus every website is closed except these (subdomains included).
+  focusAllow: ["localhost", "127.0.0.1"],
   tickMode: "onSite", // onSite | always | lastMinute | off
   tickVolume: 40,
   alternatives: [
@@ -164,6 +166,18 @@ export function hostMatches(hostname, domain) {
   domain = domain.toLowerCase().trim();
   if (!domain) return false;
   return hostname === domain || hostname.endsWith("." + domain);
+}
+
+// Focus mode: is this URL a website that has to close? (http/https and not on the allowlist)
+export function focusClosesUrl(allow, url) {
+  let u;
+  try {
+    u = new URL(url);
+  } catch {
+    return false;
+  }
+  if (u.protocol !== "http:" && u.protocol !== "https:") return false;
+  return !(allow || []).some((d) => hostMatches(u.hostname, d));
 }
 
 export function findSiteForUrl(settings, url) {
