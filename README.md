@@ -94,6 +94,8 @@ You can only go on after the last breath.
 ## While you're on the site
 
 - A **timer badge** in the corner shows the time left and your reason.
+- **The timer only runs while the site is on screen.** Switch to another tab or minimize the window and it pauses;
+  come back and it picks up where it left off. Left paused for 30 minutes, the session ends and the site goes back to the pause screen.
 - **Tick tick:** a clock ticks while you're on the site. Louder in the last minute, faster in the last 10 seconds.
   Change the sound volume anytime from the toolbar popup, no password.
 - **Black & white:** Chill goes grayscale by default. Colors are half the dopamine. Learn and Class keep their colors.

@@ -38,7 +38,8 @@ function dayUsed(key) {
     for (const s of Object.values(data.active)) {
       if (filter !== "all" && s.siteId !== filter) continue;
       if (s.dayKey !== key) continue;
-      used += s.usedMs + Math.max(0, Math.min(Date.now(), s.endsAt) - s.segStart);
+      const upTo = s.pausedAt ? Math.min(s.pausedAt, Date.now()) : Date.now();
+      used += s.usedMs + Math.max(0, Math.min(upTo, s.endsAt) - s.segStart);
     }
   }
   return { used, opens };

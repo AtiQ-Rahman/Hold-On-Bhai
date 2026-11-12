@@ -38,7 +38,7 @@ function render() {
         const why = s.session.reasonText || REASONS[s.session.reason]?.label || "";
         live =
           s.session.phase === "running"
-            ? `<div class="live">${s.session.isClass ? "🎓" : s.session.mode === "learn" ? "📚" : "⏱"} <b class="num">${fmtClock(s.session.endsAt - now)}</b> left · ${escapeHtml(why)}</div>`
+            ? `<div class="live">${s.session.isClass ? "🎓" : s.session.mode === "learn" ? "📚" : "⏱"} <b class="num">${fmtClock(s.session.endsAt - (s.session.pausedAt || now))}</b> left${s.session.pausedAt ? " · ⏸ paused" : ""} · ${escapeHtml(why)}</div>`
             : `<div class="live">⏰ Time's up</div>`;
       }
       return `

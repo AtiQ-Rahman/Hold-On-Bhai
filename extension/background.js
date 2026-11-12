@@ -46,6 +46,8 @@ const GATE_PAGE = chrome.runtime.getURL("pages/pause.html");
 const LOG_KEEP_DAYS = 90;
 const START_GRACE_MS = 20 * 1000; // ignore "no tabs left" right after a session starts
 const SOFT_EXPIRED_MAX_MS = 30 * MIN;
+// A session's clock only runs while one of its site's tabs is on screen. Paused longer than this, it ends.
+const PAUSE_LIMIT_MS = 30 * MIN;
 
 // ---------------------------------------------------------------------------
 // Storage helpers (serialized so read-modify-write never races)
@@ -239,8 +241,10 @@ function classesLeft(state, site) {
   return Math.max(0, (state.settings.classesPerDay ?? 1) - done);
 }
 
+// Paused time (pausedAt set) doesn't count as used.
 function sessionUsedMs(sess, now = Date.now()) {
-  return sess.usedMs + Math.max(0, Math.min(now, sess.endsAt) - sess.segStart);
+  const upTo = sess.pausedAt ? Math.min(sess.pausedAt, now) : now;
+  return sess.usedMs + Math.max(0, Math.min(upTo, sess.endsAt) - sess.segStart);
 }
 
 // Each site has a "chill" budget; YouTube also has a separate "learn" budget.
@@ -401,8 +405,79 @@ function gateUrl(siteId, target) {
   return `${GATE_PAGE}?site=${encodeURIComponent(siteId)}&to=${encodeURIComponent(target)}`;
 }
 
+// A paused session is still running: its clock just isn't moving.
 function isRunning(sess, now = Date.now()) {
-  return !!sess && sess.phase === "running" && now < sess.endsAt;
+  return !!sess && sess.phase === "running" && (sess.pausedAt ?? now) < sess.endsAt;
+}
+
+// Restart a paused session's clock: the end moves forward by however long it sat paused.
+function resumeInState(state, sess, now = Date.now()) {
+  if (!sess.pausedAt) return false;
+  const gap = Math.max(0, now - sess.pausedAt);
+  sess.segStart += gap;
+  sess.endsAt = capToCurfew(state, now, sess.endsAt + gap);
+  delete sess.pausedAt;
+  chrome.alarms.create(`end:${sess.siteId}`, { when: sess.endsAt });
+  scheduleTickAlarm(sess);
+  return true;
+}
+
+function pauseInState(sess, now = Date.now()) {
+  if (sess.pausedAt) return false;
+  sess.pausedAt = now;
+  chrome.alarms.clear(`end:${sess.siteId}`);
+  chrome.alarms.clear(`tick:${sess.siteId}`);
+  return true;
+}
+
+// Sites with a tab on screen right now (the content scripts report page visibility).
+async function visibleSiteIds() {
+  const { visible = {} } = await chrome.storage.session.get("visible");
+  return new Set(Object.values(visible));
+}
+
+// Pause the running sessions whose site isn't on screen and resume the ones that are.
+// A session left paused for PAUSE_LIMIT_MS ends quietly and its tabs go back to the pause screen.
+async function syncPauses() {
+  const resumed = [];
+  const left = [];
+  let settings;
+  await locked(async () => {
+    const state = await load();
+    settings = state.settings;
+    const seen = await visibleSiteIds();
+    const now = Date.now();
+    let changed = false;
+    for (const sess of Object.values(state.active)) {
+      if (!isRunning(sess, now)) continue;
+      if (seen.has(sess.siteId)) {
+        if (resumeInState(state, sess, now)) {
+          resumed.push(sess.siteId);
+          changed = true;
+        }
+      } else if (sess.pausedAt) {
+        if (now - sess.pausedAt >= PAUSE_LIMIT_MS) {
+          finalizeInState(state, sess, "left", sess.pausedAt);
+          left.push(sess.siteId);
+          changed = true;
+        }
+      } else if (now - sess.start >= START_GRACE_MS) {
+        // Right after starting, the site's tab may not have reported yet.
+        changed = pauseInState(sess, now) || changed;
+      }
+    }
+    if (changed) await chrome.storage.local.set({ active: state.active, days: state.days, log: state.log });
+    for (const siteId of resumed) {
+      const view = await sessionView(state, siteId);
+      if (view) broadcast(settings, siteId, { type: "hob:extended", view });
+    }
+  });
+  for (const siteId of left) {
+    for (const t of await tabsForSite(settings, siteId)) {
+      chrome.tabs.update(t.id, { url: gateUrl(siteId, t.url) }).catch(() => {});
+    }
+  }
+  if (resumed.length || left.length) setTimeout(updateTicking, 300);
 }
 
 // ---------------------------------------------------------------------------
@@ -478,7 +553,7 @@ chrome.tabs.onUpdated.addListener((tabId, info, tab) => {
 // ---------------------------------------------------------------------------
 
 function finalizeInState(state, sess, endedBy, at = Date.now()) {
-  const used = sess.usedMs + Math.max(0, Math.min(at, sess.endsAt) - sess.segStart);
+  const used = sessionUsedMs(sess, at);
   const entry = dayEntry(state.days, sess.siteId, sess.dayKey);
   if (sess.isClass) entry.classUsedMs += used;
   else if (sess.mode === "learn") entry.learnUsedMs += used;
@@ -655,6 +730,7 @@ async function lockSpot(siteId, url) {
     const sess = state.active[siteId];
     if (!site || !sess || sess.mode !== "learn" || sessSpot(sess) || !isRunning(sess)) return;
     const now = Date.now();
+    resumeInState(state, sess, now);
     sess.usedMs += Math.max(0, now - sess.segStart);
     sess.segStart = now;
     sess.videoId = vid;
@@ -698,6 +774,7 @@ async function setDuration(siteId, videoId, seconds) {
     const secs = Number(seconds);
     if (!Number.isFinite(secs) || secs <= 0 || secs > 12 * 3600) return;
     const now = Date.now();
+    resumeInState(state, sess, now);
     sess.usedMs += Math.max(0, now - sess.segStart);
     sess.segStart = now;
     sess.needDuration = false;
@@ -735,7 +812,7 @@ async function timeUp(siteId) {
     const state = await load();
     settings = state.settings;
     const sess = state.active[siteId];
-    if (!sess || sess.phase !== "running") return;
+    if (!sess || sess.phase !== "running" || sess.pausedAt) return;
     const now = Date.now();
     if (now < sess.endsAt - 1000) {
       chrome.alarms.create(`end:${siteId}`, { when: sess.endsAt });
@@ -931,7 +1008,7 @@ async function heartbeat() {
       if (sess.phase === "running") {
         sess.lastSeen = now;
         changed = true;
-        if (now >= sess.endsAt) due.push(["timeup", sess.siteId]);
+        if (!sess.pausedAt && now >= sess.endsAt) due.push(["timeup", sess.siteId]);
       } else if (sess.phase === "grace" && now >= sess.graceEndsAt) {
         due.push(["grace", sess.siteId]);
       } else if (sess.phase === "expired" && now - sess.timeUpAt > SOFT_EXPIRED_MAX_MS) {
@@ -945,6 +1022,8 @@ async function heartbeat() {
     if (kind === "timeup") await timeUp(siteId);
     else await graceOver(siteId);
   }
+  // Also catches a paused session that sat too long.
+  await syncPauses();
   await applyDueChanges();
   await enforceBlocks();
 }
@@ -1010,7 +1089,7 @@ async function updateTicking() {
       const { visible = {} } = await chrome.storage.session.get("visible");
       const visibleSites = new Set(Object.values(visible));
       for (const sess of Object.values(state.active)) {
-        if (!isRunning(sess, now)) continue;
+        if (!isRunning(sess, now) || sess.pausedAt) continue;
         const on =
           tickMode === "always" ||
           (tickMode === "onSite" && visibleSites.has(sess.siteId)) ||
@@ -1039,6 +1118,7 @@ async function setTabVisible(tabId, siteId, visible) {
   if (visible && siteId) map[tabId] = siteId;
   else delete map[tabId];
   await chrome.storage.session.set({ visible: map });
+  await syncPauses();
   await updateTicking();
 }
 
@@ -1471,7 +1551,7 @@ async function popupInfo() {
       learnRemainingMs: hasLearnMode(s) ? remainingMs(state, s, now, "learn") : 0,
       opens: state.days[todayKey()]?.[s.id]?.opens || 0,
       classUsedMs: (state.days[todayKey()]?.[s.id]?.classUsedMs || 0) + (sess?.isClass && isRunning(sess, now) ? sessionUsedMs(sess, now) : 0),
-      session: sess ? { phase: sess.phase, endsAt: sess.endsAt, reason: sess.reason, reasonText: sess.reasonText, mode: sess.mode || "chill", isClass: !!sess.isClass } : null,
+      session: sess ? { phase: sess.phase, endsAt: sess.endsAt, pausedAt: sess.pausedAt || null, reason: sess.reason, reasonText: sess.reasonText, mode: sess.mode || "chill", isClass: !!sess.isClass } : null,
     };
   });
   return {
@@ -1572,7 +1652,7 @@ async function handle(msg, sender) {
     case "session:timeupCheck": {
       const state = await load();
       const sess = state.active[msg.siteId];
-      if (sess && sess.phase === "running" && Date.now() >= sess.endsAt) await timeUp(msg.siteId);
+      if (sess && sess.phase === "running" && !sess.pausedAt && Date.now() >= sess.endsAt) await timeUp(msg.siteId);
       else if (sess && sess.phase === "grace" && Date.now() >= sess.graceEndsAt) await graceOver(msg.siteId);
       const s2 = await load();
       return { ok: true, view: await sessionView(s2, msg.siteId) };
