@@ -186,8 +186,12 @@ Until the timer ends:
 - The toolbar icon shows the minutes left in red.
 
 <p align="center">
+  <img src="docs/screenshots/focus-settings.png" width="640" alt="Settings: the Open during Focus allowlist with localhost, 127.0.0.1, github.com, docs.google.com and stackoverflow.com">
+</p>
+
+<p align="center">
   <img src="docs/screenshots/popup-focus-on.png" width="340" alt="Toolbar popup during Focus mode with a big countdown">
-  <img src="docs/screenshots/focus-block.png" width="420" alt="Focus mode block screen with a big countdown">
+  <img src="docs/screenshots/focus-block.png" width="420" alt="Focus mode block screen: google.com stays closed until focus ends, with a big countdown">
 </p>
 
 ---

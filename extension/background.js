@@ -100,7 +100,7 @@ function anySiteForUrl(settings, url) {
 
 // Any other website during Focus: a stand-in "site" so it lands on the focus block screen.
 function focusWebSite(settings, url) {
-  return focusClosesUrl(settings.focusAllow, url) ? { id: "_focusweb", name: new URL(url).hostname, enabled: true } : null;
+  return focusClosesUrl(settings.focusAllow, url) ? { id: "_focusweb", name: new URL(url).hostname.replace(/^www\./, ""), enabled: true } : null;
 }
 
 // The site a URL belongs to, plus the block on it (if any).
@@ -1504,7 +1504,7 @@ async function gateInfo(siteId, target) {
   if (siteId === "_focusweb") {
     let name = "This site";
     try {
-      name = new URL(target).hostname || name;
+      name = new URL(target).hostname.replace(/^www\./, "") || name;
     } catch {}
     const closed = focusActive(state, now) && focusClosesUrl(state.settings.focusAllow, target || "");
     return { ok: true, site: { id: "_focusweb", name, enabled: true }, block: closed ? blockFor(state, {}, now) : null, released: !closed };
