@@ -234,13 +234,13 @@ A daily window when tracked sites stay closed, for example 12:00 AM to 7:00 AM.
 
 | Change | What happens |
 |---|---|
-| **Stricter** (add a site, lower a budget, more breaths, rising breaths, turn tracking or hide-the-feed on, a longer curfew, more black & white) | Saves right away. No password. |
-| **Looser** (raise a budget, stop tracking a site, fewer breaths, back to fixed breaths, a shorter curfew, less black & white) | First **10 slow breaths**, then the password. The change **kicks in 24 hours later** on its own. |
+| **Stricter** (add a site, lower a budget, more breaths, rising breaths, turn tracking or hide-the-feed on, a longer curfew) | Saves right away. No password. |
+| **Looser** (raise a budget, stop tracking a site, fewer breaths, back to fixed breaths, a shorter curfew) | First **10 slow breaths**, then the password. Then it saves right away. |
+| **Black & white** (any change) | Saves right away. No password. |
 
-- Every loosening costs 10 more breaths than the last: 10, 20, 30, up to 60 (10 minutes). A week without loosening anything resets it to 10.
-- Scheduled changes show up at the top of Settings. Cancel any of them if the craving's gone. Most don't survive a day.
-- Mixed edit? The stricter part saves now, the looser part waits. Or tap **Save only the stricter stuff**.
-- During Focus mode, nothing in Settings can be saved, and scheduled changes wait until it's over.
+- It's always 10 breaths, every time.
+- Mixed edit? You still do the breaths and the password once, then everything saves. Or tap **Save only the stricter stuff** to skip them.
+- During Focus mode, nothing in Settings can be saved.
 - Five wrong passwords lock attempts for an hour.
 - The built-in sites (Facebook, YouTube, Gmail, Instagram, X, Reddit) can be switched off but never removed, and their domains always stay.
   Sites you add yourself can be removed.

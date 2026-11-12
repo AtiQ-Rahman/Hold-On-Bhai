@@ -40,7 +40,6 @@ import {
   CLASS_BREATHS,
   CLASS_CHECKIN_MIN,
   unlockBreaths,
-  UNLOCK_BREATHS_RESET_MS,
 } from "./lib.js";
 
 const GATE_PAGE = chrome.runtime.getURL("pages/pause.html");
@@ -214,10 +213,10 @@ async function saveCurfew(input) {
     if (!pw.ok) return { ...pw, needPassword: true, loosen: [label] };
     await noteLoosen();
     const { pendingChanges = [] } = await chrome.storage.local.get("pendingChanges");
-    const applyAt = Date.now() + UNLOCK_DELAY_MS;
     const kept = pendingChanges.filter((p) => !(p.path?.[0] === "curfew" && !p.site));
-    await chrome.storage.local.set({ pendingChanges: [...kept, { id: randomHex(6), path: ["curfew"], value: next, label, applyAt }] });
-    return { ok: true, curfew: state.settings.curfew, scheduled: [label], applyAt };
+    state.settings.curfew = next;
+    await chrome.storage.local.set({ settings: state.settings, pendingChanges: kept });
+    return { ok: true, curfew: next };
   }).then(async (r) => {
     if (r.ok) await enforceBlocks();
     return r;
@@ -1206,12 +1205,11 @@ function sanitizeSettings(input) {
 }
 
 // ---------------------------------------------------------------------------
-// Stricter changes apply now. Looser ones need the password and apply 24h later.
+// Stricter changes apply now. Looser ones need 10 breaths and the password, then apply now too.
 // ---------------------------------------------------------------------------
 
 const RANKS = {
   endMode: { soft: 0, strict: 1, hard: 2 },
-  grayscaleMode: { off: 0, lastMinute: 1, always: 2 },
   breathMode: { fixed: 0, rising: 1 }, // rising starts at the fixed count, so it's never looser
 };
 
@@ -1226,8 +1224,8 @@ const GLOBAL_RULES = {
   graceSeconds: ["lower", "Grace period"],
   extendMinutes: ["lower", "Minutes per extension"],
   extendBaseWaitSeconds: ["higher", "Extension wait"],
-  grayscaleMode: ["rank", "Black & white mode"],
-  grayscaleInLearn: ["higher", "Black & white in Learn"],
+  grayscaleMode: ["neutral"], // no password, changes apply right away
+  grayscaleInLearn: ["neutral"],
   classesPerDay: ["lower", "Classes per day"],
   learnCheckinMin: ["checkin", "Learn check-in"],
   tickMode: ["neutral"],
@@ -1327,24 +1325,9 @@ async function checkPassword(password) {
   return { ok: true };
 }
 
-// Before a password is even accepted for loosening, you breathe. The count grows each time.
-async function recentLoosens() {
-  const { loosenLog = [] } = await chrome.storage.local.get("loosenLog");
-  const now = Date.now();
-  // The streak resets after a full week with no loosening.
-  const sorted = loosenLog.filter((t) => t <= now).sort((a, b) => b - a);
-  let n = 0;
-  let prev = now;
-  for (const t of sorted) {
-    if (prev - t > UNLOCK_BREATHS_RESET_MS) break;
-    n++;
-    prev = t;
-  }
-  return n;
-}
-
+// Before a password is even accepted for loosening, you take 10 slow breaths.
 async function breathStart() {
-  const breaths = unlockBreaths(await recentLoosens());
+  const breaths = unlockBreaths();
   const token = randomHex(8);
   await chrome.storage.session.set({ breathToken: { token, issuedAt: Date.now(), seconds: breaths * BREATH_S } });
   return { ok: true, token, breaths };
@@ -1363,7 +1346,7 @@ async function noteLoosen() {
   await chrome.storage.session.remove("breathToken");
 }
 
-// Save stricter parts now; schedule looser parts (breaths + password) for 24h later.
+// Stricter parts save right away. Looser parts need 10 breaths + the password, then also save right away.
 async function saveWithRules(state, next, password, strictOnly = false, breathToken = null) {
   const { applied, patches } = splitChanges(state.settings, next);
   if (strictOnly) {
@@ -1378,18 +1361,15 @@ async function saveWithRules(state, next, password, strictOnly = false, breathTo
     const pw = await checkPassword(password);
     if (!pw.ok) return { ...pw, needPassword: true, loosen: patches.map((p) => p.label) };
     await noteLoosen();
-  }
-  await chrome.storage.local.set({ settings: applied });
-  let applyAt = null;
-  if (patches.length) {
-    applyAt = Date.now() + UNLOCK_DELAY_MS;
+    for (const p of patches) applyPatch(applied, p);
+    // An old scheduled change for the same setting would undo this one later.
     const { pendingChanges = [] } = await chrome.storage.local.get("pendingChanges");
     const key = (p) => `${p.site || ""}:${p.remove ? "remove" : p.path.join(".")}`;
-    const fresh = patches.map((p) => ({ ...p, id: randomHex(6), applyAt }));
-    const kept = pendingChanges.filter((p) => !fresh.some((f) => key(f) === key(p)));
-    await chrome.storage.local.set({ pendingChanges: [...kept, ...fresh] });
+    const kept = pendingChanges.filter((p) => !patches.some((f) => key(f) === key(p)));
+    if (kept.length !== pendingChanges.length) await chrome.storage.local.set({ pendingChanges: kept });
   }
-  return { ok: true, settings: applied, scheduled: patches.map((p) => p.label), applyAt };
+  await chrome.storage.local.set({ settings: applied });
+  return { ok: true, settings: applied, loosened: patches.map((p) => p.label) };
 }
 
 async function applyDueChanges() {

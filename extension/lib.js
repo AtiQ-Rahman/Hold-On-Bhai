@@ -200,13 +200,11 @@ export const BREATH_IN_S = 4;
 export const BREATH_OUT_S = 6;
 export const BREATH_S = BREATH_IN_S + BREATH_OUT_S;
 
-// Loosening a setting: breathe first. 10 breaths, then 10 more each time (within a week), up to 60.
+// Loosening a setting: 10 slow breaths first, every time. Then the password.
 export const UNLOCK_BREATHS_STEP = 10;
-export const UNLOCK_BREATHS_MAX = 60;
-export const UNLOCK_BREATHS_RESET_MS = 7 * 24 * 60 * 60 * 1000;
 
-export function unlockBreaths(recentLoosens) {
-  return Math.min(UNLOCK_BREATHS_MAX, UNLOCK_BREATHS_STEP * (recentLoosens + 1));
+export function unlockBreaths() {
+  return UNLOCK_BREATHS_STEP;
 }
 
 // Per-site breathing. "fixed": the same count every visit. "rising": starts at that same count

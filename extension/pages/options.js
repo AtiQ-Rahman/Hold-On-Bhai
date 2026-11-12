@@ -30,7 +30,7 @@ let retry = null; // (password, strictOnly, breathToken) => Promise<res>
 let breathToken = null;
 let stopBreaths = null;
 
-// Looser changes: breathe first (10 breaths, more each time), then the password box shows up.
+// Looser changes: 10 slow breaths first, then the password box shows up.
 async function askPassword(loosen, fn) {
   retry = fn;
   $("loosen-list").innerHTML = loosen.map((l) => `<li>${escapeHtml(l)}</li>`).join("");
@@ -52,7 +52,7 @@ async function askPassword(loosen, fn) {
       $("loosen-pw-row").hidden = false;
       $("loosen-pw").focus();
     },
-    (n, total) => `Breath ${n} of ${total}. Next time it's ${Math.min(60, total + 10)}.`,
+    (n, total) => `Breath ${n} of ${total}.`,
   );
 }
 
@@ -104,8 +104,7 @@ async function saveCurfew() {
   const done = (r) => {
     if (!r?.ok) return r;
     fillCurfew(r.curfew);
-    if (r.scheduled) status($("cf-status"), `Scheduled ⏳ It changes ${fmtDateTime(r.applyAt)}.`, true);
-    else status($("cf-status"), r.curfew.enabled ? "Saved ✓ Curfew is on." : "Saved ✓", true);
+    status($("cf-status"), r.curfew.enabled ? "Saved ✓ Curfew is on." : "Saved ✓", true);
     loadPending();
     return r;
   };
@@ -216,7 +215,7 @@ async function save(e) {
   const done = (res) => {
     if (!res?.ok) return res;
     fill(res.settings);
-    status(st, res.scheduled?.length ? `Saved ✓ ${res.scheduled.length} looser change${res.scheduled.length === 1 ? "" : "s"} kick in ${fmtDateTime(res.applyAt)}.` : "Saved ✓", true);
+    status(st, "Saved ✓", true);
     loadPending();
     setTimeout(() => (st.textContent = ""), 6000);
     return res;
@@ -270,7 +269,7 @@ function renderLock(timeOnly = false) {
     title.textContent = "Settings are locked 🔒";
     text.textContent = lock.attemptsBlockedUntil && lock.attemptsBlockedUntil > now
       ? `Too many wrong passwords. Try again in ${fmtDuration(lock.attemptsBlockedUntil - now)}.`
-      : `Stricter changes save right away: add a site, lower a budget, longer waits, a longer curfew. Looser ones need slow breaths (10, then 20, then 30…), your password, and kick in ${lock.unlockDelayHours} hours later.`;
+      : `Stricter changes save right away: add a site, lower a budget, longer waits, a longer curfew. Looser ones need 10 slow breaths, then your password.`;
   }
   if (timeOnly && $("lock-actions").dataset.state === lock.state) return;
   $("lock-actions").dataset.state = lock.state;
