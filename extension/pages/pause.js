@@ -46,6 +46,12 @@ async function init() {
     location.replace(target);
     return;
   }
+  if (info.released && siteId === "_focusweb" && /^(chrome|moz)-extension:/.test(target)) {
+    // Another extension's page (a PDF viewer): a page can't open it itself, the tabs API can.
+    const tab = await chrome.tabs.getCurrent();
+    if (tab) chrome.tabs.update(tab.id, { url: target });
+    return;
+  }
   if (info.released) {
     $("oops-text").textContent = "Focus is over. You made it 🏆 Open that page again if you still need it.";
     return show("oops");
@@ -145,7 +151,7 @@ function showBlock(b) {
     if (left <= 0) {
       clearInterval(timer);
       if (/^https?:/.test(target)) location.replace(target);
-      else location.reload();
+      else location.reload(); // reloads into the release path above (extension pages included)
     }
   };
   const timer = setInterval(tick, 1000);

@@ -175,11 +175,16 @@ For when you really need to work.
 2. Pick **25m, 50m, 90m, 2h**, or type your own minutes.
 3. Tap **🔒 Lock in**, then tap again to confirm.
 
+Reading something you want to stay on? Start Focus from that tab and leave **Keep this tab open** ticked.
+That one tab stays open (on that same website only) and shows a small Focus countdown in the corner.
+It works for a PDF viewer tab too, just without the countdown on the page.
+
 Until the timer ends:
 - **Every website is closed.** Google, news, shopping, all of it. Only the sites you allow open
   (Settings → 🎯 Focus mode → *Open during Focus*; `localhost` and `127.0.0.1` by default, subdomains included).
 - Sites on your list stay closed even if you allow them, even the ones you switched off (Instagram, X, Reddit).
 - Learn and Class are off too. Any running session ends.
+- Other extensions' pages (like a PDF viewer) are closed too, unless it's the tab you kept.
 - The **extensions page is blocked**, so you can't disable Hold On Bhai from there.
 - Settings can't be saved.
 - **There's no cancel.** You can only add time (+15 min).

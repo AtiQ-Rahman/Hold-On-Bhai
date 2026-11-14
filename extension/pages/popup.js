@@ -59,6 +59,10 @@ function render() {
 let focusMin = 50;
 let confirmUntil = 0;
 let focusError = "";
+// The tab you're on, if Focus could keep it open (asked once when the popup opens).
+let keepTab = null; // { id, label, ext }
+let keepIt = true;
+let staysNote = ""; // the tab you're on stays open in Focus anyway (allowlist, PDF viewer...)
 
 function renderFocus() {
   const el = document.getElementById("focus");
@@ -73,6 +77,7 @@ function renderFocus() {
           <span id="f-until"></span>
           <button class="more" id="f-more">+15 min</button>
         </div>
+        ${data.focus.keep ? `<p style="margin:8px 0 0">📖 Kept open: <b>${escapeHtml(data.focus.keep.label || data.focus.keep.host)}</b> (that one tab only)</p>` : ""}
         <p style="margin:8px 0 0">No cancel button. That's the whole point 😌</p>`;
       el.querySelector("#f-more").addEventListener("click", async () => {
         const left = Math.ceil((data.focus.until - Date.now()) / 60000);
@@ -94,6 +99,8 @@ function renderFocus() {
         ${FOCUS_PRESETS.map((m) => `<button data-m="${m}">${m >= 60 && m % 60 === 0 ? `${m / 60}h` : `${m}m`}</button>`).join("")}
         <input id="f-custom" type="number" min="1" max="${FOCUS_MAX_MIN}" placeholder="min">
       </div>
+      ${keepTab ? `<label class="keep"><input type="checkbox" id="f-keep" ${keepIt ? "checked" : ""}> Keep this tab open: <b>${escapeHtml(keepTab.label)}</b></label>` : ""}
+      ${staysNote ? `<p class="keep-note">${staysNote}</p>` : ""}
       <button class="lockin" id="f-go"></button>
       <div class="err" id="f-err" hidden></div>`;
     el.querySelectorAll("[data-m]").forEach((b) =>
@@ -110,13 +117,18 @@ function renderFocus() {
       confirmUntil = 0;
       renderFocus();
     });
+    el.querySelector("#f-keep")?.addEventListener("change", (e) => {
+      keepIt = e.target.checked;
+      confirmUntil = 0;
+      renderFocus();
+    });
     el.querySelector("#f-go").addEventListener("click", async () => {
       if (Date.now() > confirmUntil) {
         confirmUntil = Date.now() + 5000;
         return renderFocus();
       }
       confirmUntil = 0;
-      const r = await send("focus:start", { minutes: focusMin });
+      const r = await send("focus:start", { minutes: focusMin, keepTabId: keepTab && keepIt ? keepTab.id : undefined });
       focusError = r?.ok ? "" : r?.error || "Couldn't start focus.";
       load();
     });
@@ -171,7 +183,24 @@ async function load() {
   }
 }
 
+async function findKeepTab() {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true }).catch(() => []);
+  if (!tab) return;
+  const r = await send("focus:keepable", { tabId: tab.id });
+  if (r?.host) keepTab = { id: tab.id, label: r.label, ext: r.ext };
+  else if (r?.stays === "allowlist") staysNote = "✓ This tab stays open in Focus (it's on your allowlist).";
+  else if (r?.stays === "notweb") staysNote = "✓ This tab stays open in Focus (it's a file on your computer).";
+  else return;
+  // Re-draw the off-state card so the checkbox shows up.
+  const el = document.getElementById("focus");
+  if (el.dataset.mode === "off") {
+    el.dataset.mode = "";
+    renderFocus();
+  }
+}
+
 load();
+findKeepTab();
 setInterval(() => {
   if (!data?.ok) return;
   render();

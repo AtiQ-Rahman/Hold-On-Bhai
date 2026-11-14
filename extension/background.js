@@ -97,16 +97,63 @@ function anySiteForUrl(settings, url) {
   return hit ? siteById(settings, hit.id) : null;
 }
 
-// Any other website during Focus: a stand-in "site" so it lands on the focus block screen.
-function focusWebSite(settings, url) {
-  return focusClosesUrl(settings.focusAllow, url) ? { id: "_focusweb", name: new URL(url).hostname.replace(/^www\./, ""), enabled: true } : null;
+// Another extension's page (a PDF viewer, a reader...). It can show any website, so Focus closes it too.
+function isOtherExtPage(url) {
+  const m = /^(chrome|moz)-extension:\/\/([^/]+)/i.exec(url || "");
+  return !!m && m[2] !== chrome.runtime.id;
 }
 
-// The site a URL belongs to, plus the block on it (if any).
-function siteAndBlock(state, url, now = Date.now()) {
+// What Focus closes: websites not on the allowlist, and other extensions' pages.
+function focusCloses(settings, url) {
+  return focusClosesUrl(settings.focusAllow, url) || isOtherExtPage(url);
+}
+
+// A readable name for a page Focus closes. A viewer page is named after the file it shows.
+function focusLabel(url) {
+  try {
+    const u = new URL(url);
+    if (!isOtherExtPage(url)) return u.hostname.replace(/^www\./, "") || "This page";
+    const file = u.searchParams.get("file") || u.searchParams.get("src") || u.searchParams.get("url");
+    try {
+      if (file) return `${new URL(file).hostname.replace(/^www\./, "")} (in a viewer)`;
+    } catch {}
+    return "Another extension's page";
+  } catch {
+    return "This page";
+  }
+}
+
+// Any other page during Focus: a stand-in "site" so it lands on the focus block screen.
+function focusWebSite(settings, url) {
+  return focusCloses(settings, url) ? { id: "_focusweb", name: focusLabel(url), enabled: true } : null;
+}
+
+// The one tab you were reading when Focus started can stay open, but only on that same website.
+// Navigating it anywhere else, or opening that website in another tab, still gets closed.
+function focusKeepsTab(state, tabId, url) {
+  const keep = state.focus?.keep;
+  if (!keep || tabId == null || tabId !== keep.tabId) return false;
+  try {
+    const u = new URL(url);
+    return (/^https?:$/.test(u.protocol) || isOtherExtPage(url)) && u.hostname === keep.host;
+  } catch {
+    return false;
+  }
+}
+
+// Can this tab be kept open for a Focus starting now? Something Focus would close, never a listed site.
+function keepableTab(state, url) {
+  if (!focusCloses(state.settings, url || "")) return null;
+  if (anySiteForUrl(state.settings, url)) return null;
+  return { host: new URL(url).hostname, label: focusLabel(url), ext: isOtherExtPage(url) };
+}
+
+// The site a URL belongs to, plus the block on it (if any). tabId lets the kept Focus tab through.
+function siteAndBlock(state, url, now = Date.now(), tabId = null) {
   const tracked = findSiteForUrl(state.settings, url);
   if (focusActive(state, now)) {
-    const site = tracked || anySiteForUrl(state.settings, url) || focusWebSite(state.settings, url);
+    const kept = focusKeepsTab(state, tabId, url);
+    const site = tracked || anySiteForUrl(state.settings, url) || (kept ? null : focusWebSite(state.settings, url));
     return { site, block: site ? blockFor(state, site, now) : null };
   }
   return { site: tracked, block: blockFor(state, tracked, now) };
@@ -140,7 +187,7 @@ async function enforceBlocks() {
       chrome.tabs.update(tab.id, { url: gateUrl("_focus", tab.url) }).catch(() => {});
       continue;
     }
-    const { site, block } = siteAndBlock(state, tab.url, now);
+    const { site, block } = siteAndBlock(state, tab.url, now, tab.id);
     if (site && block) chrome.tabs.update(tab.id, { url: gateUrl(site.id, tab.url) }).catch(() => {});
   }
   updateBadge(state);
@@ -170,7 +217,7 @@ function updateBadge(state) {
   chrome.action.setBadgeBackgroundColor({ color }).catch(() => {});
 }
 
-async function startFocus(minutes) {
+async function startFocus(minutes, keepTabId) {
   const mins = Math.round(Number(minutes));
   if (!Number.isFinite(mins) || mins < 1 || mins > FOCUS_MAX_MIN) return { ok: false, error: `Pick 1 to ${FOCUS_MAX_MIN} minutes.` };
   const res = await locked(async () => {
@@ -178,9 +225,18 @@ async function startFocus(minutes) {
     const now = Date.now();
     const until = now + mins * MIN;
     // You can make a running focus longer, never shorter.
-    const focus = focusActive(state, now)
-      ? { ...state.focus, until: Math.max(state.focus.until, until) }
-      : { start: now, until };
+    let focus;
+    if (focusActive(state, now)) {
+      // The kept tab is picked at the start only. Adding one mid-Focus would be a way out.
+      focus = { ...state.focus, until: Math.max(state.focus.until, until) };
+    } else {
+      focus = { start: now, until };
+      if (Number.isInteger(keepTabId)) {
+        const tab = await chrome.tabs.get(keepTabId).catch(() => null);
+        const k = keepableTab(state, tab?.url);
+        if (k) focus.keep = { tabId: keepTabId, host: k.host, label: k.label };
+      }
+    }
     const focusLog = (await chrome.storage.local.get("focusLog")).focusLog || [];
     if (!focusActive(state, now)) focusLog.push({ start: now, plannedMin: mins });
     await chrome.storage.local.set({ focus, focusLog: focusLog.slice(-500) });
@@ -382,6 +438,8 @@ chrome.runtime.onInstalled.addListener(async (details) => {
 });
 
 chrome.runtime.onStartup.addListener(async () => {
+  // Tab ids start over after a browser restart, so the kept Focus tab is no longer known.
+  dropFocusKeep(null);
   chrome.alarms.create("heartbeat", { periodInMinutes: 1 });
   // Sessions from a previous browser run: count usage up to the last heartbeat.
   await locked(async () => {
@@ -518,7 +576,18 @@ async function checkSiteAbandoned() {
   });
 }
 
+// The kept Focus tab is gone: forget it, so a later tab can't inherit its id.
+async function dropFocusKeep(tabId) {
+  await locked(async () => {
+    const { focus } = await chrome.storage.local.get("focus");
+    if (!focus?.keep || (tabId != null && focus.keep.tabId !== tabId)) return;
+    delete focus.keep;
+    await chrome.storage.local.set({ focus });
+  });
+}
+
 chrome.tabs.onRemoved.addListener((tabId) => {
+  dropFocusKeep(tabId);
   checkSiteAbandoned();
   setTabVisible(tabId, null, false);
 });
@@ -532,7 +601,7 @@ chrome.tabs.onUpdated.addListener((tabId, info, tab) => {
       chrome.tabs.update(tabId, { url: gateUrl("_focus", info.url) }).catch(() => {});
       return;
     }
-    const { site, block } = siteAndBlock(state, info.url);
+    const { site, block } = siteAndBlock(state, info.url, Date.now(), tabId);
     if (!site) return;
     if (block) {
       if (state.active[site.id]) await enforceBlocks();
@@ -1475,18 +1544,15 @@ async function saveSettings(input, password, strictOnly, breathToken) {
 // Gate (pause page) info
 // ---------------------------------------------------------------------------
 
-async function gateInfo(siteId, target) {
+async function gateInfo(siteId, target, tabId = null) {
   const state = await load();
   const now = Date.now();
   if (siteId === "_focus") {
     return { ok: true, site: { id: "_focus", name: "Extensions", enabled: true }, block: focusActive(state, now) ? blockFor(state, {}, now) : null, released: !focusActive(state, now) };
   }
   if (siteId === "_focusweb") {
-    let name = "This site";
-    try {
-      name = new URL(target).hostname.replace(/^www\./, "") || name;
-    } catch {}
-    const closed = focusActive(state, now) && focusClosesUrl(state.settings.focusAllow, target || "");
+    const name = focusLabel(target || "");
+    const closed = focusActive(state, now) && focusCloses(state.settings, target || "") && !focusKeepsTab(state, tabId, target);
     return { ok: true, site: { id: "_focusweb", name, enabled: true }, block: closed ? blockFor(state, {}, now) : null, released: !closed };
   }
   const site = siteById(state.settings, siteId);
@@ -1590,7 +1656,7 @@ async function handle(msg, sender) {
   switch (msg.type) {
     case "gate:check": {
       const state = await load();
-      const { site, block } = siteAndBlock(state, msg.url);
+      const { site, block } = siteAndBlock(state, msg.url, Date.now(), sender.tab?.id ?? null);
       if (!site) return { tracked: false };
       if (block) {
         if (state.active[site.id]) await enforceBlocks();
@@ -1616,7 +1682,7 @@ async function handle(msg, sender) {
       return { tracked: true, allowed: false };
     }
     case "gate:info":
-      return gateInfo(msg.siteId, msg.target);
+      return gateInfo(msg.siteId, msg.target, sender.tab?.id ?? null);
     case "gate:start": {
       const res = await startSession(msg);
       if (!res.ok) return res;
@@ -1668,7 +1734,27 @@ async function handle(msg, sender) {
       await closeSiteTabs(msg.siteId, msg.early ? "done-early" : "done");
       return { ok: true };
     case "focus:start":
-      return startFocus(msg.minutes);
+      return startFocus(msg.minutes, msg.keepTabId);
+    case "focus:kept": {
+      // Content script asks: am I the tab kept open during Focus? (only the background knows tab ids)
+      const state = await load();
+      const kept = focusActive(state) && focusKeepsTab(state, sender.tab?.id ?? null, msg.url);
+      return { ok: true, kept, until: kept ? state.focus.until : 0 };
+    }
+    case "focus:keepable": {
+      // Popup asks: could this tab stay open if Focus starts now?
+      const state = await load();
+      if (focusActive(state)) return { ok: true, host: null };
+      const tab = await chrome.tabs.get(msg.tabId).catch(() => null);
+      const url = tab?.url || "";
+      const k = keepableTab(state, url);
+      if (k) return { ok: true, ...k };
+      // Not something Focus closes: say so, so nobody wonders why there's no checkbox.
+      let stays = null;
+      if (/^https?:/i.test(url) && !anySiteForUrl(state.settings, url)) stays = "allowlist";
+      else if (/^file:/i.test(url)) stays = "notweb";
+      return { ok: true, host: null, stays };
+    }
     case "curfew:save":
       return saveCurfew(msg.curfew);
     case "popup:info":

@@ -525,5 +525,108 @@
     .error { color: #b91c1c; font-size: 13px; }
   `;
 
+  // ------------------------------------------------------------------ Focus tile
+  // The one tab kept open during Focus gets a small countdown, so you know how long is left.
+
+  let focusHost = null;
+  let focusShadow = null;
+  let focusTimer = null;
+  let focusUntil = 0;
+
+  function fmtLeft(ms) {
+    const total = Math.max(0, Math.ceil(ms / 1000));
+    const h = Math.floor(total / 3600);
+    const m = Math.floor((total % 3600) / 60);
+    const sec = String(total % 60).padStart(2, "0");
+    return h ? `${h}:${String(m).padStart(2, "0")}:${sec}` : `${m}:${sec}`;
+  }
+
+  async function focusCheck() {
+    const { focus } = await chrome.storage.local.get("focus");
+    // Only ask the background when this could be the kept tab (it knows the tab id).
+    if (!focus?.keep || focus.until <= Date.now() || focus.keep.host !== location.hostname) return hideFocusTile();
+    const r = await send("focus:kept", { url: location.href });
+    if (r?.kept) showFocusTile(r.until);
+    else hideFocusTile();
+  }
+
+  function showFocusTile(until) {
+    focusUntil = until;
+    if (!focusHost || !focusHost.isConnected) {
+      focusHost = document.createElement("hold-on-bhai-focus");
+      focusHost.style.cssText = "all: initial; position: fixed; z-index: 2147483647;";
+      focusShadow = focusHost.attachShadow({ mode: "closed" });
+      focusShadow.innerHTML = `
+        <style>${FOCUS_CSS}</style>
+        <button class="tile" title="Focus is on. Click to make it smaller or bigger.">
+          <span class="icon">🎯</span>
+          <span class="txt"><span class="label">Focus</span><span class="clock">--:--</span></span>
+          <span class="sub">left · stay on this one</span>
+        </button>`;
+      const tile = focusShadow.querySelector(".tile");
+      try {
+        if (localStorage.getItem("hob-focus-mini") === "1") tile.classList.add("mini");
+      } catch {}
+      tile.addEventListener("click", () => {
+        tile.classList.toggle("mini");
+        try {
+          localStorage.setItem("hob-focus-mini", tile.classList.contains("mini") ? "1" : "0");
+        } catch {}
+      });
+      (document.body || root).appendChild(focusHost);
+    }
+    if (!focusTimer) focusTimer = setInterval(focusTick, 1000);
+    focusTick();
+  }
+
+  function focusTick() {
+    const left = focusUntil - Date.now();
+    if (left <= 0) return hideFocusTile();
+    focusShadow.querySelector(".clock").textContent = fmtLeft(left);
+    focusShadow.querySelector(".tile").classList.toggle("low", left <= 5 * 60 * 1000);
+    if (!focusHost.isConnected) (document.body || root).appendChild(focusHost);
+  }
+
+  function hideFocusTile() {
+    clearInterval(focusTimer);
+    focusTimer = null;
+    focusHost?.remove();
+    focusHost = null;
+  }
+
+  const FOCUS_CSS = `
+    :host { all: initial; }
+    * { box-sizing: border-box; font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    .tile {
+      position: fixed; right: 18px; bottom: 18px;
+      display: grid; grid-template-columns: auto auto; column-gap: 10px; align-items: center;
+      padding: 10px 16px 10px 12px; border: 0; border-radius: 16px; cursor: pointer; text-align: left;
+      background: linear-gradient(135deg, #dc2626, #b91c1c); color: #fff;
+      box-shadow: 0 8px 24px rgba(220, 38, 38, .32);
+      opacity: .94; transition: opacity .2s, transform .2s;
+    }
+    .tile:hover { opacity: 1; transform: translateY(-1px); }
+    .icon { grid-row: span 2; font-size: 22px; line-height: 1; }
+    .txt { display: flex; align-items: baseline; gap: 8px; }
+    .label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; opacity: .85; }
+    .clock { font-size: 20px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.1; }
+    .sub { font-size: 11.5px; opacity: .8; }
+    .tile.mini { padding: 6px 12px 6px 10px; border-radius: 999px; opacity: .8; }
+    .tile.mini .icon { grid-row: auto; font-size: 14px; }
+    .tile.mini .label, .tile.mini .sub { display: none; }
+    .tile.mini .clock { font-size: 14px; }
+    .tile.low .clock { animation: pulse 1.2s infinite; }
+    @keyframes pulse { 50% { opacity: .55; } }
+    @media (prefers-reduced-motion: reduce) { .tile, .tile.low .clock { transition: none; animation: none; } }
+  `;
+
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area === "local" && changes.focus) focusCheck();
+  });
+  window.addEventListener("pageshow", (e) => {
+    if (e.persisted) focusCheck();
+  });
+  focusCheck();
+
   init();
 })();
